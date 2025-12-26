@@ -277,6 +277,11 @@ class ConditionalUNet(nn.Module):
             self.decoder_blocks, self.upsample_layers, reversed(encoder_features)
         ):
             x = upsample(x)
+            # Resize skip connection to match x if needed
+            if x.shape[2:] != skip_features.shape[2:]:
+                skip_features = F.interpolate(
+                    skip_features, size=x.shape[2:], mode='bilinear', align_corners=False
+                )
             # Concatenate skip connection
             x = torch.cat([x, skip_features], dim=1)
             for block in blocks:
