@@ -212,7 +212,9 @@ def main():
     denormalize_fn = None
     if not args.input_dir:
         def denormalize(data, key):
-            return dataset.get_denormalized(torch.FloatTensor(data), key)
+            if not isinstance(data, torch.Tensor):
+                data = torch.tensor(data)
+            return dataset.get_denormalized(data, key)
         denormalize_fn = denormalize
     
     sampler.save_samples(
