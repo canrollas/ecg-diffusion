@@ -1,4 +1,4 @@
-# Low memory configuration for ECG Diffusion Model
+# Low memory configuration for ECG Diffusion Model (CUDA)
 # Use this config if you encounter CUDA out of memory errors
 
 # Dataset configuration
