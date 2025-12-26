@@ -208,6 +208,9 @@ class ConditionalUNet(nn.Module):
         self.decoder_blocks = nn.ModuleList()
         self.upsample_layers = nn.ModuleList()
         
+        # Track previous channel for upsample
+        prev_ch = None
+        
         for i, mult in enumerate(reversed(channel_multipliers)):
             output_ch = base_channels * mult
             
@@ -224,11 +227,15 @@ class ConditionalUNet(nn.Module):
             self.decoder_blocks.append(nn.ModuleList(blocks))
             
             # Upsample (except last level)
+            # Use current output_ch for upsample input, and next level's channel for output
             if i < len(channel_multipliers) - 1:
+                # Next level's channel (going backwards)
+                next_mult = channel_multipliers[-(i+2)]
+                next_ch = base_channels * next_mult
                 self.upsample_layers.append(
                     nn.Sequential(
-                        nn.ConvTranspose2d(output_ch, output_ch, kernel_size=4, stride=2, padding=1),
-                        nn.GroupNorm(8, output_ch),
+                        nn.ConvTranspose2d(output_ch, next_ch, kernel_size=4, stride=2, padding=1),
+                        nn.GroupNorm(8, next_ch),
                         nn.SiLU()
                     )
                 )
