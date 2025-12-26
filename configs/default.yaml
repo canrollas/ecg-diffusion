@@ -1,0 +1,83 @@
+# Default configuration for ECG Diffusion Model
+
+# Dataset configuration
+dataset:
+  dataset_path: "dataset"
+  train_split: "train"
+  val_split: "val"
+  file_prefix: null  # null for all files, or e.g., "100_lead0_z0_w000"
+  normalize: true
+  augment: true
+  batch_size: 4
+  num_workers: 4
+  pin_memory: true
+
+# Model configuration
+model:
+  condition_encoder:
+    condition_dim: 256
+    base_channels: 64
+    use_cross_attention: true
+  
+  unet:
+    in_channels: 2  # freq_embeddings + images
+    condition_dim: 256
+    base_channels: 64
+    channel_multipliers: [1, 2, 4, 8]
+    time_emb_dim: 128
+    num_res_blocks: 2
+    attention_resolutions: [16, 8]
+    dropout: 0.1
+  
+  diffusion:
+    num_timesteps: 1000
+    beta_start: 0.0001
+    beta_end: 0.02
+    beta_schedule: "linear"  # "linear" or "cosine"
+    eta: 0.0  # DDIM parameter (0.0 = deterministic)
+
+# Training configuration
+training:
+  num_epochs: 100
+  learning_rate: 1.0e-4
+  weight_decay: 0.01
+  gradient_accumulation_steps: 1
+  clip_grad_norm: 1.0
+  
+  # Loss weights
+  loss:
+    freq_weight: 1.0
+    image_weight: 1.0
+    consistency_weight: 0.1
+    use_consistency: true
+  
+  # EMA
+  use_ema: true
+  ema_decay: 0.9999
+  
+  # Mixed precision
+  use_mixed_precision: true
+  
+  # Checkpointing
+  save_dir: "checkpoints"
+  save_every: 10  # Save every N epochs
+  val_every: 5    # Validate every N epochs
+  
+  # Logging
+  log_dir: "logs"
+  log_every: 100  # Log every N steps
+
+# Inference configuration
+inference:
+  num_inference_steps: 50  # DDIM sampling steps
+  batch_size: 4
+  clip_denoised: true
+  use_ema: true
+  output_dir: "generated_samples"
+
+# Device configuration
+device: "mps"  # "cuda" or "cpu"
+
+# Random seed
+seed: 42
+
