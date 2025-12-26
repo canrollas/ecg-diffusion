@@ -14,6 +14,7 @@ from models.diffusion import DDIMDiffusion
 from inference.sampler import DDIMSampler
 from utils.config import load_config
 from utils.visualization import visualize_samples, compare_samples
+from utils.inference_analyzer import InferenceAnalyzer
 
 
 def create_models(config: dict, device: str):
@@ -99,6 +100,11 @@ def main():
         "--compare",
         action="store_true",
         help="Compare with ground truth (requires dataset)"
+    )
+    parser.add_argument(
+        "--analyze",
+        action="store_true",
+        help="Run detailed analysis (like analyze_dataset.py)"
     )
     parser.add_argument(
         "--device",
@@ -242,6 +248,40 @@ def main():
             target_freq=target_freq,
             target_images=target_images,
             save_path=str(output_dir / "comparison.png")
+        )
+    
+    # Detailed analysis (like analyze_dataset.py)
+    if args.analyze:
+        print("\nRunning detailed analysis...")
+        
+        # Prepare inputs for analysis
+        amp_init_np = amp_init.cpu().numpy()
+        emb_init_np = emb_init.cpu().numpy()
+        
+        # Prepare targets if available
+        if not args.input_dir:
+            target_freq_np = target_freq
+            target_images_np = target_images
+        else:
+            target_freq_np = None
+            target_images_np = None
+        
+        # Create analyzer
+        analyzer = InferenceAnalyzer(
+            amp_init=amp_init_np,
+            emb_init=emb_init_np,
+            generated_freq=freq_embeddings,
+            generated_images=images,
+            target_freq=target_freq_np,
+            target_images=target_images_np,
+            filenames=filenames if isinstance(filenames, list) else None
+        )
+        
+        # Run full analysis
+        analyzer.run_full_analysis(
+            save_dir=str(output_dir),
+            visualize=True,
+            detailed=True
         )
     
     print(f"Generated samples saved to {output_dir}")
