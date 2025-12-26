@@ -85,6 +85,34 @@ class ECGDataset(Dataset):
                     "images": file_dict["images"]
                 })
         
+        if len(file_list) == 0:
+            # Provide helpful error message
+            error_msg = f"No matching files found for split '{self.split}'"
+            if self.file_prefix:
+                error_msg += f" with prefix '{self.file_prefix}'"
+            error_msg += f"\nDataset path: {self.dataset_path}"
+            error_msg += f"\nChecked paths:"
+            error_msg += f"\n  - {self.amp_init_path} (exists: {self.amp_init_path.exists()})"
+            error_msg += f"\n  - {self.emb_init_path} (exists: {self.emb_init_path.exists()})"
+            error_msg += f"\n  - {self.freq_embeddings_path} (exists: {self.freq_embeddings_path.exists()})"
+            error_msg += f"\n  - {self.images_path} (exists: {self.images_path.exists()})"
+            
+            # Count files in each directory
+            if self.amp_init_path.exists():
+                amp_files = list(self.amp_init_path.glob("*.npy"))
+                error_msg += f"\n  - Found {len(amp_files)} files in amp_init"
+            if self.emb_init_path.exists():
+                emb_files = list(self.emb_init_path.glob("*.npy"))
+                error_msg += f"\n  - Found {len(emb_files)} files in emb_init"
+            if self.freq_embeddings_path.exists():
+                freq_files = list(self.freq_embeddings_path.glob("*.npy"))
+                error_msg += f"\n  - Found {len(freq_files)} files in freq_embeddings"
+            if self.images_path.exists():
+                img_files = list(self.images_path.glob("*.npy"))
+                error_msg += f"\n  - Found {len(img_files)} files in images"
+            
+            raise ValueError(error_msg)
+        
         return file_list
     
     def _compute_normalization_params(self):

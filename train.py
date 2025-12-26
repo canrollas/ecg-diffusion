@@ -68,13 +68,17 @@ def create_data_loaders(config: dict):
     dataset_config = config["dataset"]
     
     # Training dataset
-    train_dataset = ECGDataset(
-        dataset_path=dataset_config["dataset_path"],
-        split=dataset_config["train_split"],
-        file_prefix=dataset_config.get("file_prefix"),
-        normalize=dataset_config["normalize"],
-        augment=dataset_config["augment"]
-    )
+    try:
+        train_dataset = ECGDataset(
+            dataset_path=dataset_config["dataset_path"],
+            split=dataset_config["train_split"],
+            file_prefix=dataset_config.get("file_prefix"),
+            normalize=dataset_config["normalize"],
+            augment=dataset_config["augment"]
+        )
+    except ValueError as e:
+        print(f"Error creating training dataset: {e}")
+        raise
     
     # Pin memory only for CUDA, not for MPS
     pin_memory = dataset_config["pin_memory"] and config.get("device", "cpu") == "cuda"
@@ -91,13 +95,18 @@ def create_data_loaders(config: dict):
     val_dataset = None
     val_loader = None
     if dataset_config.get("val_split"):
-        val_dataset = ECGDataset(
-            dataset_path=dataset_config["dataset_path"],
-            split=dataset_config["val_split"],
-            file_prefix=dataset_config.get("file_prefix"),
-            normalize=dataset_config["normalize"],
-            augment=False  # No augmentation for validation
-        )
+        try:
+            val_dataset = ECGDataset(
+                dataset_path=dataset_config["dataset_path"],
+                split=dataset_config["val_split"],
+                file_prefix=dataset_config.get("file_prefix"),
+                normalize=dataset_config["normalize"],
+                augment=False  # No augmentation for validation
+            )
+        except ValueError as e:
+            print(f"Warning: Error creating validation dataset: {e}")
+            print("Continuing without validation dataset...")
+            val_dataset = None
         
         val_loader = DataLoader(
             val_dataset,
