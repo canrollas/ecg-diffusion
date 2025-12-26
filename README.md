@@ -81,6 +81,18 @@ Train the model with default configuration:
 python train.py --config configs/default.yaml
 ```
 
+If you encounter CUDA out of memory errors, use the low memory configuration:
+
+```bash
+python train.py --config configs/low_memory.yaml
+```
+
+The low memory config uses:
+- Smaller model (32 base channels instead of 64)
+- Batch size of 1 with gradient accumulation
+- Disabled attention layers
+- Reduced condition dimensions
+
 Resume training from a checkpoint:
 
 ```bash

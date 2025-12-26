@@ -131,7 +131,7 @@ class Trainer:
         
         # Mixed precision scaler (only for CUDA, MPS doesn't need it)
         if use_mixed_precision and device == "cuda":
-            self.scaler = torch.cuda.amp.GradScaler()
+            self.scaler = torch.amp.GradScaler('cuda')
         else:
             self.scaler = None
         

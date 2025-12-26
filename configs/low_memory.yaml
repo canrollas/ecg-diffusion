@@ -1,0 +1,79 @@
+# Low memory configuration for ECG Diffusion Model
+# Use this config if you encounter CUDA out of memory errors
+
+# Dataset configuration
+dataset:
+  dataset_path: "dataset"
+  train_split: "train"
+  val_split: "val"
+  file_prefix: null
+  normalize: true
+  augment: true
+  batch_size: 1  # Minimum batch size
+  num_workers: 0  # Set to 0 to avoid multiprocessing overhead
+  pin_memory: false
+
+# Model configuration (reduced size)
+model:
+  condition_encoder:
+    condition_dim: 128  # Reduced from 256
+    base_channels: 32  # Reduced from 64
+    use_cross_attention: false  # Use concatenation instead (less memory)
+  
+  unet:
+    in_channels: 2
+    condition_dim: 128  # Reduced from 256
+    base_channels: 32  # Reduced from 64
+    channel_multipliers: [1, 2, 4]  # Reduced from [1, 2, 4, 8]
+    time_emb_dim: 64  # Reduced from 128
+    num_res_blocks: 1  # Reduced from 2
+    attention_resolutions: []  # Disabled attention
+    dropout: 0.1
+  
+  diffusion:
+    num_timesteps: 1000
+    beta_start: 0.0001
+    beta_end: 0.02
+    beta_schedule: "linear"
+    eta: 0.0
+
+# Training configuration
+training:
+  num_epochs: 100
+  learning_rate: 1.0e-4
+  weight_decay: 0.01
+  gradient_accumulation_steps: 8  # High accumulation to simulate batch_size=8
+  clip_grad_norm: 1.0
+  
+  loss:
+    freq_weight: 1.0
+    image_weight: 1.0
+    consistency_weight: 0.1
+    use_consistency: true
+  
+  use_ema: false  # Disable EMA to save memory
+  ema_decay: 0.9999
+  
+  use_mixed_precision: true  # Keep enabled for memory savings
+  
+  save_dir: "checkpoints"
+  save_every: 10
+  val_every: 5
+  
+  log_dir: "logs"
+  log_every: 100
+
+# Inference configuration
+inference:
+  num_inference_steps: 50
+  batch_size: 1
+  clip_denoised: true
+  use_ema: false
+  output_dir: "generated_samples"
+
+# Device configuration
+device: "cuda"
+
+# Random seed
+seed: 42
+

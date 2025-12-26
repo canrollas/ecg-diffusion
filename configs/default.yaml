@@ -8,8 +8,8 @@ dataset:
   file_prefix: null  # null for all files, or e.g., "100_lead0_z0_w000"
   normalize: true
   augment: true
-  batch_size: 4
-  num_workers: 4
+  batch_size: 1  # Reduced for memory efficiency
+  num_workers: 2  # Reduced for memory efficiency
   pin_memory: true
 
 # Model configuration
@@ -22,11 +22,11 @@ model:
   unet:
     in_channels: 2  # freq_embeddings + images
     condition_dim: 256
-    base_channels: 64
-    channel_multipliers: [1, 2, 4, 8]
+    base_channels: 32  # Reduced from 64 to save memory
+    channel_multipliers: [1, 2, 4]  # Reduced from [1, 2, 4, 8] to save memory
     time_emb_dim: 128
     num_res_blocks: 2
-    attention_resolutions: [16, 8]
+    attention_resolutions: []  # Disabled attention to save memory
     dropout: 0.1
   
   diffusion:
@@ -41,7 +41,7 @@ training:
   num_epochs: 100
   learning_rate: 1.0e-4
   weight_decay: 0.01
-  gradient_accumulation_steps: 1
+  gradient_accumulation_steps: 4  # Increased to simulate larger batch size
   clip_grad_norm: 1.0
   
   # Loss weights
