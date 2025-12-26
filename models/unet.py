@@ -209,27 +209,30 @@ class ConditionalUNet(nn.Module):
         self.upsample_layers = nn.ModuleList()
         
         # Decoder channel tracking
+        # Decoder channel tracking
         # After upsample and skip connection, we have: upsample_output_ch + skip_ch
         decoder_input_ch = input_ch  # Start with middle block output channels
+        prev_output_ch = decoder_input_ch
         
         for i, mult in enumerate(reversed(channel_multipliers)):
             skip_ch = base_channels * mult  # Skip connection channel size
             
-            # Calculate input channels for this decoder level
-            # This is: upsample_output_ch + skip_ch
+            # Upsample
             if i == 0:
-                # First decoder level: middle output (no upsample) + skip connection
-                decoder_level_input_ch = decoder_input_ch + skip_ch
+                self.upsample_layers.append(nn.Identity())
+                upsampled_ch = prev_output_ch
             else:
-                # Subsequent levels: upsample output + skip connection
-                # Upsample takes previous level's output_ch and produces next_ch
-                # The next_ch is the same as skip_ch for this level (upsample goes from prev to current)
-                # Previous level output is skip_ch of previous level
-                prev_mult = channel_multipliers[-(i-1)]  # Previous level's multiplier
-                prev_output_ch = base_channels * prev_mult  # Previous level's output
-                # Upsample: prev_output_ch -> skip_ch (current level)
-                upsample_output_ch = skip_ch  # After upsample, we get skip_ch
-                decoder_level_input_ch = upsample_output_ch + skip_ch
+                self.upsample_layers.append(
+                    nn.Sequential(
+                        nn.ConvTranspose2d(prev_output_ch, skip_ch, kernel_size=4, stride=2, padding=1),
+                        nn.GroupNorm(8, skip_ch),
+                        nn.SiLU()
+                    )
+                )
+                upsampled_ch = skip_ch
+            
+            # Calculate input channels for this decoder level
+            decoder_level_input_ch = upsampled_ch + skip_ch
             
             # Residual blocks at this resolution
             blocks = []
@@ -243,21 +246,7 @@ class ConditionalUNet(nn.Module):
                 current_input_ch = skip_ch
             
             self.decoder_blocks.append(nn.ModuleList(blocks))
-            
-            # Upsample (except last level)
-            if i < len(channel_multipliers) - 1:
-                # Next level's channel (going backwards)
-                next_mult = channel_multipliers[-(i+2)]
-                next_ch = base_channels * next_mult
-                self.upsample_layers.append(
-                    nn.Sequential(
-                        nn.ConvTranspose2d(skip_ch, next_ch, kernel_size=4, stride=2, padding=1),
-                        nn.GroupNorm(8, next_ch),
-                        nn.SiLU()
-                    )
-                )
-            else:
-                self.upsample_layers.append(nn.Identity())
+            prev_output_ch = skip_ch
         
         # Output projection
         self.output_norm = nn.GroupNorm(8, base_channels)
