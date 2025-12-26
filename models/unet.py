@@ -208,26 +208,37 @@ class ConditionalUNet(nn.Module):
         self.decoder_blocks = nn.ModuleList()
         self.upsample_layers = nn.ModuleList()
         
-        # Track previous channel for upsample
-        prev_ch = None
+        # Decoder channel tracking
+        # After upsample and skip connection, we have: next_ch (from upsample) + output_ch (from skip) = next_ch + output_ch
+        decoder_input_ch = input_ch  # Start with middle block output channels
         
         for i, mult in enumerate(reversed(channel_multipliers)):
-            output_ch = base_channels * mult
+            output_ch = base_channels * mult  # Skip connection channel size
+            
+            # Calculate input channels for this decoder level
+            if i == 0:
+                # First decoder level: middle output + skip connection
+                decoder_level_input_ch = decoder_input_ch + output_ch
+            else:
+                # Subsequent levels: previous level output + skip connection
+                prev_mult = channel_multipliers[-(i-1)]
+                prev_output_ch = base_channels * prev_mult
+                decoder_level_input_ch = prev_output_ch + output_ch
             
             # Residual blocks at this resolution
             blocks = []
+            current_input_ch = decoder_level_input_ch
             for _ in range(num_res_blocks):
                 blocks.append(
                     ResidualBlock(
-                        input_ch + output_ch, output_ch, condition_dim, time_emb_dim, dropout
+                        current_input_ch, output_ch, condition_dim, time_emb_dim, dropout
                     )
                 )
-                input_ch = output_ch
+                current_input_ch = output_ch
             
             self.decoder_blocks.append(nn.ModuleList(blocks))
             
             # Upsample (except last level)
-            # Use current output_ch for upsample input, and next level's channel for output
             if i < len(channel_multipliers) - 1:
                 # Next level's channel (going backwards)
                 next_mult = channel_multipliers[-(i+2)]
